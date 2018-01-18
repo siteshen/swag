@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 func makeRef(name string) string {
@@ -32,4 +34,10 @@ type reflectType interface {
 func makeName(t reflectType) string {
 	name := filepath.Base(t.PkgPath()) + t.Name()
 	return strings.Replace(name, "-", "_", -1)
+}
+
+// isExported reports whether the identifier is exported.
+func isExported(id string) bool {
+	r, _ := utf8.DecodeRuneInString(id)
+	return unicode.IsUpper(r)
 }

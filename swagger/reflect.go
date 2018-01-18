@@ -136,8 +136,27 @@ func defineObject(v interface{}) Object {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 
-		// skip unexported fields
-		if strings.ToLower(field.Name[0:1]) == field.Name[0:1] {
+		if field.Anonymous {
+			t := field.Type
+			if t.Kind() == reflect.Ptr {
+				t = t.Elem()
+			}
+			// If embedded, StructField.PkgPath is not a reliable
+			// indicator of whether the field is exported.
+			// See https://golang.org/issue/21122
+			if !isExported(t.Name()) && t.Kind() != reflect.Struct {
+				// Ignore embedded fields of unexported non-struct types.
+				// Do not ignore embedded fields of unexported struct types
+				// since they may have exported fields.
+				continue
+			}
+
+			anonObject := defineObject(reflect.New(t).Interface())
+			for n, p := range anonObject.Properties {
+				properties[n] = p
+			}
+		} else if field.PkgPath != "" {
+			// Ignore unexported non-embedded fields.
 			continue
 		}
 
